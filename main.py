@@ -21,14 +21,14 @@ class pdfReader:
     def __init__(self, path):
         if(not path.endswith('.pdf')):
             path += ".pdf"
-        self.pdf_obj = fitz.open(path)
+        self.pdf_obj = PdfReader(path)
     
     def getPage(self, i):
-        return self.pdf_obj[i]
+        return self.pdf_obj.pages[i]
     
     def getDocumentInfo(self):
         s = ""
-        for k, v in self.pdf_obj.metadata.items():
+        for k, v in self.pdf_obj.keys():
             s += str(k) + '-->' + str(v) + "\n"
         return s
     
@@ -47,7 +47,7 @@ class pdfWriter:
         if(not path.endswith('.pdf')):
             path += ".pdf"
         self.fh = open(path, 'wb')
-        self.pdf_obj = PdfFileWriter()
+        self.pdf_obj = PdfWriter()
     
     def addPage(self, page):
         self.pdf_obj.addPage(page)
@@ -97,7 +97,7 @@ class user_input:
 
 
 def print_intro(terminal_width):
-    os.system('clear')
+    os.system('clear') if os.name == 'posix' else os.system('cls')
     s = "welcome to pdf editing"
     s = "-" * terminal_width + "\n" + \
         "-" * int((terminal_width - len(s)) / 2) + \
@@ -300,19 +300,49 @@ def terminal_input(terminal_width):
         print_intro(terminal_width)
 
 
+import os
+
+
+def get_windows_terminal():
+    from ctypes import windll, create_string_buffer
+    h = windll.kernel32.GetStdHandle(-12)
+    csbi = create_string_buffer(22)
+    res = windll.kernel32.GetConsoleScreenBufferInfo(h, csbi)
+
+    # return default size if actual size can't be determined
+    if not res: return 80, 25
+    
+    import struct
+    (bufx, bufy, curx, cury, wattr, left, top, right, bottom, maxx, maxy) \
+        = struct.unpack("hhhhHhhhhhh", csbi.raw)
+    width = right - left + 1
+    height = bottom - top + 1
+    
+    return width, height
+
+
+def get_linux_terminal():
+    width = os.popen('tput cols', 'r').readline()
+    height = os.popen('tput lines', 'r').readline()
+    
+    return int(width), int(height)
+
+
+
+
+
 if __name__ == '__main__':
-    
-    terminal_dim = os.popen('stty size', 'r').read().split()
-    terminal_dim = [int(terminal_dim[0]), int(terminal_dim[1])]
-    
+    terminal_dim = [0, 0]
+    terminal_dim[1], terminal_dim[0] = get_linux_terminal() if os.name == 'posix' else get_windows_terminal()
+
     print_intro(terminal_dim[1])
-    
+
     opt = input("configure from [f]ile or [T]erminal: ")
     if opt == "" or opt == "t" or opt == "T":
         terminal_input(terminal_dim[1])
     elif opt == "f" or opt == "F":
         print("file")
-    
+
     input("\n\nwaiting")
 
 # pages = pdf_splitter("slide.pdf")
