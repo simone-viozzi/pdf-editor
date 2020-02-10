@@ -29,13 +29,10 @@ for path in paths:
 
     s = ""
     for k in pdf_obj.keys():
+        print(path, k)
+        
         a = str(pdf_obj[k]).replace("'", '"')
         a = re.sub(r'\{\.\.\.\}', r'"\g<0>"', re.sub(r'\(\d+,\s?\d+\)', r'"\g<0>"', a))
-        
-        
-
-        json_object = json.loads(a)
-        a = json.dumps(json_object, indent=2)
 
         reg1 = re.compile(r'([^\"])(\[[^\[\]]*\])([^\"])')
         a = reg1.sub(replif1, a)
@@ -43,13 +40,19 @@ for path in paths:
         reg2 = re.compile(r'([^\"])(\{[^\{\}]*\})([^\"])')
         a = reg1.sub(replif2, a)
         
-        #print("*"*20)
-        if len(a) > 5000:
-            print(a)
-        #print("*" * 20)
+        reg3 = re.compile(r'\[[^\[\]\:\.]*\]')
+        a = reg3.sub("\"[...]\"", a)
+
+        reg4 = re.compile(r'\{[^\{\}\.]*\}')
+        a = reg4.sub("\"{...}\"", a)
+
+        reg5 = re.compile(r'\{[^\{\}\[\]]*\[[^\{\}]*\]\,[^\{\}]*\}(\,?)')
+        a = reg5.sub(r'"{...}"\g<1>', a)
         
-        a = re.sub(r"\"\/Kids\":\s?(\[(?>([^\[\]])+|\[([^\[\]])+\])*\])", '"/Kids": "{...}"', a)
+        print(a)
+        print("\n")
+        
         json_object = json.loads(a)
-        json_formatted_str = json.dumps(json_object, indent=2)
-        s += ". " * 5 + "\n" + str(k) + ': ' + "\n" + str(json_formatted_str) + "\n"
-    
+        a = json.dumps(json_object, indent=2)
+        
+        
